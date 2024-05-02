@@ -1,89 +1,76 @@
 <?php
 
-//namespace Models;
-
-class DB extends PDO
+class DB
 {
+    public $con;
 
-    public function __construct()
+    public function __construct($database, $host, $dbname, $username, $password)
     {
-        parent::__construct('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASS);
+        $this->con = new PDO("$database:host=$host;dbname=$dbname", "$username", "$password");
     }
 
-    public function select($sql, $data = array())
+//todo select
+    public function select($table)
     {
-        $stmt = $this->prepare($sql);
-        $stmt->execute($data);
-        return $stmt->fetchAll();
+        $query = "SELECT * from $table";
+        $sql = $this->con->prepare($query);
+        $sql->execute();
+        return $sql->fetchAll(PDO::FETCH_ASSOC);
     }
+
+//todo delete
+
+
+    public function delete($table, $cond)
+    {
+        $key = array_keys($cond)[0];
+        $value = $cond[$key];
+        $query = "DELETE FROM $table WHERE $key = $value";
+        echo $query;
+        $sql = $this->con->prepare($query);
+        return $sql->execute();
+    }
+
+//todo insert
 
     public function insert($table, $data)
     {
-        $keys = implode(',', array_keys($data));
-        $values = implode(',', array_fill(0, count($data), '?'));
-        $sql = "INSERT INTO $table ($keys) VALUES ($values)";
-        $stmt = $this->prepare($sql);
-        $stmt->execute(array_values($data));
-        return $this->lastInsertId();
-    }
-
-    public function update($table, $data, $where)
-    {
-        $set = '';
+// $query = "INSERT INTO $table(name, email, password, age, GPA, image) VALUES ('[value-2]','[value-3]','[value-4]','[value-5]','[value-6]','[value-7]')";
+        $query = "INSERT INTO $table(";
         foreach ($data as $key => $value) {
-            $set .= "$key=?,";
+            $query .= "$key ,";
         }
-        $set = rtrim($set, ',');
-        $sql = "UPDATE $table SET $set WHERE $where";
-        $stmt = $this->prepare($sql);
-        $stmt->execute(array_values($data));
-        return $stmt->rowCount();
-    }
+//? substr
+        $query = substr($query, 0, -1);
+        $query .= ") VALUES (";
 
-    public function delete($table, $where)
-    {
-        $sql = "DELETE FROM $table WHERE $where";
-        $stmt = $this->prepare($sql);
-        $stmt->execute();
-        return $stmt->rowCount();
-    }
-
-    public function query($sql, $data = array())
-    {
-        $stmt = $this->prepare($sql);
-        $stmt->execute($data);
-        return $stmt->rowCount();
-    }
-
-    public function count($table, $where = '')
-    {
-        $sql = "SELECT COUNT(*) FROM $table";
-        if ($where) {
-            $sql .= " WHERE $where";
+        foreach ($data as $key => $value) {
+            $query .= "'$value' ,";
         }
-        $stmt = $this->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchColumn();
+        $query = substr($query, 0, -1);
+        $query .= ")";
+
+
+        $sql = $this->con->prepare($query);
+        return $sql->execute();
     }
 
-    public function lastId()
+    public function update($table, $data, $id)
     {
-        return $this->lastInsertId();
+
+        $query = "UPDATE $table SET  ";
+        foreach ($data as $key => $value) {
+            $query .= "$key= '$value' ,";
+        }
+//? substr
+        $query = substr($query, 0, -1);
+        $query .= "WHERE id=$id";
+        echo $query;
+
+        $sql = $this->con->prepare($query);
+
+        return $sql->execute();
     }
 
-    public function beginTransaction()
-    {
-        return $this->beginTransaction();
-    }
-
-    public function endTransaction()
-    {
-        return $this->commit();
-    }
-
-    public function cancelTransaction()
-    {
-        return $this->rollBack();
-    }
 
 }
